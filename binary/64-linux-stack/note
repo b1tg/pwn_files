@@ -1,0 +1,14 @@
+main
+rsp 0x7fffffffe470
+rbp 0x7fffffffe480
+rip 0x400623
+
+vuln 
+rsp 0x7fffffffe400
+rbp 0x7fffffffe460
+
+old rbp saved in 0x7fffffffe460
+old rip saved in 0x7fffffffe468
+
+写104个A到达old rip
+

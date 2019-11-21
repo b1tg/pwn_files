@@ -1,0 +1,39 @@
+gdb-peda$ disas main
+Dump of assembler code for function main:
+   0x0000000000400526 <+0>:     push   rbp
+   0x0000000000400527 <+1>:     mov    rbp,rsp
+   0x000000000040052a <+4>:     mov    edi,0x4005d4
+=> 0x000000000040052f <+9>:     call   0x400400 <puts@plt>
+   0x0000000000400534 <+14>:    mov    edi,0x4005d9
+   0x0000000000400539 <+19>:    call   0x400400 <puts@plt>
+   0x000000000040053e <+24>:    mov    eax,0x0
+   0x0000000000400543 <+29>:    pop    rbp
+   0x0000000000400544 <+30>:    ret    
+End of assembler dump.
+gdb-peda$ x/10gx 0x400400
+0x400400 <puts@plt>:    0x006800200c1225ff      0xffffffe0e9000000
+0x400410 <__libc_start_main@plt>:       0x016800200c0a25ff      0xffffffd0e9000000
+0x400420:       0x906600200bd225ff      0x0000000000000000
+0x400430 <_start>:      0x89485ed18949ed31      0x495450f0e48348e2
+0x400440 <_start+16>:   0xc748004005c0c0c7      0xc7c74800400550c1
+
+
+
+vagrant@ubuntu-xenial:/vagrant/pwn/how2heap/glibc_2.25$ ./house_of_spirit 
+This file demonstrates the house of spirit attack.
+Calling malloc() once so that it sets up its memory.
+We will now overwrite a pointer to point to a fake 'fastbin' region.
+This region (memory of length: 80) contains two chunks. The first starts at 0x7fffffffe3d8 and the second at 0x7fffffffe418.
+This chunk.size of this region has to be 16 more than the region (to accomodate the chunk data) while still falling into the fastbin category (<= 128 on x64). The PREV$
+INUSE (lsb) bit is ignored by free for fastbin-sized chunks, however the IS_MMAPPED (second lsb) and NON_MAIN_ARENA (third lsb) bits cause problems.
+... note that this has to be the size of the next malloc request rounded to the internal size used by the malloc implementation. E.g. on x64, 0x30-0x38 will all be rou$
+ded to 0x40, so they would work for the malloc parameter at the end. 
+The chunk.size of the *next* fake region has to be sane. That is > 2*SIZE_SZ (> 16 on x64) && < av->system_mem (< 128kb by default for the main arena) to pass the next$
+ize integrity checks. No need for fastbin size.
+Now we will overwrite our pointer with the address of the fake region inside the fake first chunk, 0x7fffffffe3d8.
+... note that the memory address of the *region* associated with this chunk must be 16-byte aligned.
+Freeing the overwritten pointer.
+Now the next malloc will return the region of our fake chunk at 0x7fffffffe3d8, which will be 0x7fffffffe3e0!
+malloc(0x30): 0x7fffffffe3e0
+vagrant@ubuntu-xenial:/vagrant/pwn/how2heap/glibc_2.25$ make
+(0x40)     fastbin[2]: 0x7fffffffe3a0 --> 0x0

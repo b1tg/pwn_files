@@ -1,0 +1,31 @@
+# -*- coding:utf-8 -*-
+#!/usr/bin/env python
+from pwn import *
+context.log_level = 'debug'
+
+context.terminal = ['tmux', 'splitw', '-h']
+# r = remote('52.68.31.117', 9547)
+name = './passcode'
+r = process(name)
+
+# libc = ELF("/lib/i386-linux-gnu/libc-2.23.so")
+libc = ELF("/lib/x86_64-linux-gnu/libc-2.23.so")
+binn = ELF(name)
+
+r.recvuntil("System 1.0 beta.\n")
+r.sendline("A"*100)
+
+
+print(str(r.proc.pid))
+
+gdb.attach(r, """
+echo br *login+34
+echo x/20wx $esp\\n
+x/20wx $esp
+echo x/wx $ebp\\n
+x/wx $ebp
+""");
+print(str(r.proc.pid))
+
+r.interactive()
+
